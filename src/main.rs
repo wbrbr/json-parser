@@ -1,5 +1,4 @@
-use std::{collections::HashMap, fs::{File, read_to_string}, iter::Peekable, str::Chars};
-
+use std::{collections::HashMap, fs::{read_to_string}, iter::Peekable, str::Chars};
 #[derive(Debug)]
 enum Value {
     Object(HashMap<String, Box<Value>>),
@@ -14,31 +13,31 @@ enum Value {
 fn parse(input: String) -> Option<Value> {
     let mut iter = input.chars().peekable();
 
-    parseElement(&mut iter)
+    parse_element(&mut iter)
 }
 
-fn parseElement(iter: &mut Peekable<Chars>) -> Option<Value> {
-    skipWhitespace(iter);
-    let ret = parseValue(iter);
-    skipWhitespace(iter);
+fn parse_element(iter: &mut Peekable<Chars>) -> Option<Value> {
+    skip_whitespace(iter);
+    let ret = parse_value(iter);
+    skip_whitespace(iter);
 
     ret
 }
 
-fn parseValue(iter: &mut Peekable<Chars>) -> Option<Value> {
+fn parse_value(iter: &mut Peekable<Chars>) -> Option<Value> {
     match iter.peek() {
-        Some('"') => Some(Value::String(parseString(iter)?)),
-        Some(c) if c.is_numeric() || *c == '-' => parseNumber(iter),
-        Some('{') => parseObject(iter),
-        Some('[') => parseArray(iter),
-        Some('t') => parseTrue(iter),
-        Some('f') => parseFalse(iter),
-        Some('n') => parseNull(iter),
+        Some('"') => Some(Value::String(parse_string(iter)?)),
+        Some(c) if c.is_numeric() || *c == '-' => parse_number(iter),
+        Some('{') => parse_object(iter),
+        Some('[') => parse_array(iter),
+        Some('t') => parse_true(iter),
+        Some('f') => parse_false(iter),
+        Some('n') => parse_null(iter),
         _ => None,
     }
 }
 
-fn parseString(iter: &mut Peekable<Chars>) -> Option<String> {
+fn parse_string(iter: &mut Peekable<Chars>) -> Option<String> {
     if iter.next()? != '"' {
         return None;
     }
@@ -66,16 +65,16 @@ fn parseString(iter: &mut Peekable<Chars>) -> Option<String> {
     None
 }
 
-fn parseNumber(iter: &mut Peekable<Chars>) -> Option<Value> {
-    let int = parseInteger(iter)?;
-    let fraction = parseFraction(iter)?;
-    let exponent = parseExponent(iter)?;
+fn parse_number(iter: &mut Peekable<Chars>) -> Option<Value> {
+    let int = parse_integer(iter)?;
+    let fraction = parse_fraction(iter)?;
+    let exponent = parse_exponent(iter)?;
 
     let value = (int as f64) * 10_f64.powi(exponent);
     Some(Value::Number(value))
 }
 
-fn parseInteger(iter: &mut Peekable<Chars>) -> Option<i32> {
+fn parse_integer(iter: &mut Peekable<Chars>) -> Option<i32> {
     let c = iter.peek()?;
 
     let mut sign = 1;
@@ -84,22 +83,22 @@ fn parseInteger(iter: &mut Peekable<Chars>) -> Option<i32> {
         iter.next();
     }
 
-    let num = parseDigits(iter)?;
+    let num = parse_digits(iter)?;
 
     Some(sign * (num as i32))
 }
 
-fn parseFraction(iter: &mut Peekable<Chars>) -> Option<u32> {
+fn parse_fraction(iter: &mut Peekable<Chars>) -> Option<u32> {
     match iter.peek() {
         Some('.') => {
             iter.next();
-            parseDigits(iter)
+            parse_digits(iter)
         }
         _ => Some(0),
     }
 }
 
-fn parseDigits(iter: &mut Peekable<Chars>) -> Option<u32> {
+fn parse_digits(iter: &mut Peekable<Chars>) -> Option<u32> {
     match iter.peek() {
         Some(c) if c.is_numeric() => {}
         _ => return None,
@@ -108,7 +107,7 @@ fn parseDigits(iter: &mut Peekable<Chars>) -> Option<u32> {
     let mut num = 0;
 
     while let Some(c) = iter.peek().cloned() {
-        if (c.is_numeric()) {
+        if c.is_numeric() {
             iter.next();
             num = 10 * num + c.to_digit(10).unwrap();
         } else {
@@ -119,19 +118,19 @@ fn parseDigits(iter: &mut Peekable<Chars>) -> Option<u32> {
     Some(num)
 }
 
-fn parseExponent(iter: &mut Peekable<Chars>) -> Option<i32> {
+fn parse_exponent(iter: &mut Peekable<Chars>) -> Option<i32> {
     match iter.peek() {
         Some('e') | Some('E') => {
             iter.next();
-            let sign = parseSign(iter)?;
-            let num = parseDigits(iter)?;
+            let sign = parse_sign(iter)?;
+            let num = parse_digits(iter)?;
             Some(sign * (num as i32))
         }
         _ => Some(0),
     }
 }
 
-fn parseSign(iter: &mut Peekable<Chars>) -> Option<i32> {
+fn parse_sign(iter: &mut Peekable<Chars>) -> Option<i32> {
     match iter.peek() {
         Some('+') => Some(1),
         Some('-') => Some(-1),
@@ -139,9 +138,9 @@ fn parseSign(iter: &mut Peekable<Chars>) -> Option<i32> {
     }
 }
 
-fn parseObject(iter: &mut Peekable<Chars>) -> Option<Value> {
+fn parse_object(iter: &mut Peekable<Chars>) -> Option<Value> {
     assert!(iter.next()? == '{');
-    skipWhitespace(iter);
+    skip_whitespace(iter);
     let mut map = HashMap::new();
 
     while let Some(c) = iter.peek().cloned() {
@@ -153,34 +152,34 @@ fn parseObject(iter: &mut Peekable<Chars>) -> Option<Value> {
                 iter.next();
             }
 
-            let (str, val) = parseMember(iter)?;
+            let (str, val) = parse_member(iter)?;
             map.insert(str, Box::new(val));
-            skipWhitespace(iter);
+            skip_whitespace(iter);
         }
     }
 
     None
 }
 
-fn parseMember(iter: &mut Peekable<Chars>) -> Option<(String, Value)> {
-    skipWhitespace(iter);
-    let s = parseString(iter)?;
-    skipWhitespace(iter);
+fn parse_member(iter: &mut Peekable<Chars>) -> Option<(String, Value)> {
+    skip_whitespace(iter);
+    let s = parse_string(iter)?;
+    skip_whitespace(iter);
     if iter.next()? != ':' {
         return None;
     }
-    skipWhitespace(iter);
-    let v = parseElement(iter)?;
+    skip_whitespace(iter);
+    let v = parse_element(iter)?;
 
     Some((s, v))
 }
 
-fn parseArray(iter: &mut Peekable<Chars>) -> Option<Value> {
+fn parse_array(iter: &mut Peekable<Chars>) -> Option<Value> {
     if iter.next()? != '[' {
         return None;
     }
 
-    skipWhitespace(iter);
+    skip_whitespace(iter);
 
     let mut vec = Vec::new();
 
@@ -192,15 +191,15 @@ fn parseArray(iter: &mut Peekable<Chars>) -> Option<Value> {
             if c == ',' {
                 iter.next();
             }
-            vec.push(Box::new(parseElement(iter)?));
-            skipWhitespace(iter);
+            vec.push(Box::new(parse_element(iter)?));
+            skip_whitespace(iter);
         }
     }
 
     None
 }
 
-fn parseTrue(iter: &mut Peekable<Chars>) -> Option<Value> {
+fn parse_true(iter: &mut Peekable<Chars>) -> Option<Value> {
     if iter.next()? == 't' && iter.next()? == 'r' && iter.next()? == 'u' && iter.next()? == 'e' {
         Some(Value::True)
     } else {
@@ -208,7 +207,7 @@ fn parseTrue(iter: &mut Peekable<Chars>) -> Option<Value> {
     }
 }
 
-fn parseFalse(iter: &mut Peekable<Chars>) -> Option<Value> {
+fn parse_false(iter: &mut Peekable<Chars>) -> Option<Value> {
     if iter.next()? == 'f'
         && iter.next()? == 'a'
         && iter.next()? == 'l'
@@ -221,7 +220,7 @@ fn parseFalse(iter: &mut Peekable<Chars>) -> Option<Value> {
     }
 }
 
-fn parseNull(iter: &mut Peekable<Chars>) -> Option<Value> {
+fn parse_null(iter: &mut Peekable<Chars>) -> Option<Value> {
     if iter.next()? == 'n' && iter.next()? == 'u' && iter.next()? == 'l' && iter.next()? == 'l' {
         Some(Value::Null)
     } else {
@@ -229,7 +228,7 @@ fn parseNull(iter: &mut Peekable<Chars>) -> Option<Value> {
     }
 }
 
-fn skipWhitespace(iter: &mut Peekable<Chars>) {
+fn skip_whitespace(iter: &mut Peekable<Chars>) {
     while let Some(c) = iter.peek() {
         if c.is_whitespace() {
             iter.next();
