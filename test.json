@@ -1,4 +1,4 @@
 {
-    "hello": [1, 2, false, null],
+    "hello": [1, 2.4e1, false, null],
     "world": "a\n\/"
 }

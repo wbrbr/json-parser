@@ -70,7 +70,7 @@ fn parse_number(iter: &mut Peekable<Chars>) -> Option<Value> {
     let fraction = parse_fraction(iter)?;
     let exponent = parse_exponent(iter)?;
 
-    let value = (int as f64) * 10_f64.powi(exponent);
+    let value = ((int as f64) + fraction) * 10_f64.powi(exponent);
     Some(Value::Number(value))
 }
 
@@ -88,13 +88,32 @@ fn parse_integer(iter: &mut Peekable<Chars>) -> Option<i32> {
     Some(sign * (num as i32))
 }
 
-fn parse_fraction(iter: &mut Peekable<Chars>) -> Option<u32> {
+fn parse_fraction(iter: &mut Peekable<Chars>) -> Option<f64> {
     match iter.peek() {
         Some('.') => {
+            let mut s = String::from("0.");
             iter.next();
-            parse_digits(iter)
+
+            match iter.peek() {
+                Some(c) if c.is_numeric() => {},
+                _ => return None
+            }
+
+            while let Some(c) = iter.peek().cloned() {
+                if c.is_numeric() {
+                    iter.next();
+                    s.push(c);
+                } else {
+                    break;
+                }
+            }
+
+            // should be a valid float. otherwise this is a bug (or overflow maybe ?)
+            let val: f64 = s.parse().unwrap();
+            Some(val)
+
         }
-        _ => Some(0),
+        _ => Some(0.),
     }
 }
 
